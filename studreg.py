@@ -5,29 +5,79 @@ from __future__ import (
 )
 from builtins import *
 
-import json
-from functools import wraps, update_wrapper
+from functools import wraps
 
-# import logging
-# from logging import FileHandler
 
-from flask import Flask, request, g
+import flask
+import flask.logging
+from flask import Flask, request
+from flask.ext import restful
+import flask.ext.restful.reqparse
 import flask.ext.sqlalchemy
 
-import sqlalchemy
-import sqlalchemy.ext.declarative
+# For the models
 from sqlalchemy import Column, Float, Integer, String, Table, Text, text
-from sqlalchemy.ext.declarative import declarative_base
 
+#######################
+#### Configuration ####
+#######################
 
-# our app configuration
-import studreg_config
+import local_config
 
-# http://stackoverflow.com/questions/14398329/can-sqlalchemy-automatically-create-relationships-from-a-database-schema
+MYSQL_URI = (
+    'mysql+pymysql://'
+    '{username}:{password}@'
+    '{host}/{database}'
+).format(
+    username=local_config.mysql['username'],
+    password=local_config.mysql['password'],
+    host=local_config.mysql['host'],
+    database=local_config.mysql['database'],
+)
+
+######################
+#### Creating app ####
+######################
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = studreg_config.MYSQL_URI
+app.config['SQLALCHEMY_DATABASE_URI'] = MYSQL_URI
 db = flask.ext.sqlalchemy.SQLAlchemy(app)
+
+api = restful.Api(app)
+
+logger = flask.logging.create_logger(app)
+
+########################
+#### Authentication ####
+########################
+
+def check_auth(username, password):
+    return username == 'admin' and password == 'password'
+
+
+def authenticate():
+    return Response(
+        'Could not verify your access level for that URL.\n'
+        'You have to login with proper credentials',
+        401,
+        {
+            'WWW-Authenticate': 'Basic realm="Login Required"',
+        },
+    )
+
+
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or check_auth(auth.username, auth.password):
+            return authenticate()
+        return f(*args, **kwargs)
+    return decorated
+
+################
+#### Models ####
+################
 
 class Ezor(db.Model):
     __tablename__ = 'ezor'
@@ -77,8 +127,12 @@ class User(db.Model):
     password = Column(String(50))
     is_active = Column(Integer, nullable=False)
     usertype = Column(String(11), nullable=False)
-# http://arusahni.net/blog/2014/03/flask-nocache.html
 
+##################
+#### No cache ####
+##################
+
+# http://arusahni.net/blog/2014/03/flask-nocache.html
 def nocache(view):
     @wraps(view)
     def no_cache(*args, **kwargs):
@@ -95,47 +149,59 @@ def nocache(view):
 
     return update_wrapper(view, no_cache)
 
+#############
+#### API ####
+#############
 
-def find_membership(identity_numbers):
-    s = sqlalchemy.sql.select([studentreg]).where(identi)
-    result = conn.execute(s)
+parser = restful.reqparse.RequestParser()
+parser.add_argument('identity_number', type=str, help='Student identity number')
+parser.add_argument('email', type=str, help='Student e-mail address')
+
+def find_membership_status(identity_number, email):
+    logger.debug('arguments: {}'.format((identity_number, email)))
+
+    some_res = Studentreg.query.first()
+    logger.debug('some_res {}',format((some_res.id, some_res.email)))
+
+    sql_query_result = Studentreg.query.get(identity_number)
+
+    # Student record exists
+    if sql_query_result is None:
+        return 1
+
+    # Student email is valid
+    if sql_query_result.email.strip() != email.strip():
+        return 2
+
+    # Student doesn't belong to aguda
+    if sql_query_result.revaha == u'0':
+        return 3
+
+    # Student belongs to aguda
+    if sql_query_result.revaha == u'1':
+        return 4
+
+class MembershipStatus(restful.Resource):
+    def post(self):
+        args = parser.parse_args()
+        membership_status = find_membership_status(
+            identity_number=args['identity_number'].strip(),
+            email=args['email'].strip(),
+        )
+        return dict(membership_status=membership_status)
 
 
-@app.route('/api/1/<func_name>', methods=['POST'])
-#@nocache
-def api_1(func_name):
-    if func_name == 'find_membership':
-        data = json.loads(request.post.identity_number)
-        identity_number = data.keys()[0]
-        if Studentreg.query.filter(id==data).first() is None:
-            return
-        member_dict = find_membership(request.post.identity_numbers)
-        return json.dumps(member_dict)
+api.add_resource(
+    MembershipStatus,
+    '/api/v1.0/membership_status/',
+)
 
-
-@app.route('/')
-#@nocache
-def root():
-    return ' '.join([request.path, request.method])
-
-@app.route('/update/')
-#@nocache
-def update():
-    return ' '.join([request.path, request.method])
-
-
-def app_run():
-    app.run(
-        port=5001,
-    )
-
-def test_query():
-    print(Studentreg.query.filter(Studentreg.id=='888411485').first().id)
-    #db_session = sqlalchemy.orm.scoped_session(sqlalchemy.orm.sessionmaker(bind=db))
-    #for item in db_session.query(models.Studentreg):
-    #    print(item)
-
+##############
+#### Main ####
+##############
 
 if __name__ == '__main__':
-    test_query()
-    #app_run()
+    app.run(
+        port=5001,
+        debug=True,
+    )
