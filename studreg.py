@@ -50,6 +50,7 @@ logger = flask.logging.create_logger(app)
 #### Authentication ####
 ########################
 
+
 def check_auth(username, password):
     logger.debug((username, password))
     authorized = local_config.api_user.get(username, None) == password
@@ -136,34 +137,11 @@ class User(db.Model):
     is_active = Column(Integer, nullable=False)
     usertype = Column(String(11), nullable=False)
 
-
-##################
-#### No cache ####
-##################
-
-# http://arusahni.net/blog/2014/03/flask-nocache.html
-def nocache(view):
-    @wraps(view)
-    def no_cache(*args, **kwargs):
-        response = make_response(view(*args, **kwargs))
-        response.headers['Last-Modified'] = datetime.now()
-        response.headers['Cache-Control'] = (
-            'no-store, no-cache, '
-            'must-revalidate, post-check=0, '
-            'pre-check=0, max-age=0'
-        )
-        response.headers['Pragma'] = 'no-cache'
-        response.headers['Expires'] = '-1'
-        return response
-
-    return update_wrapper(view, no_cache)
-
 #############
 #### API ####
 #############
 
 parser = flask.ext.restful.reqparse.RequestParser()
-parser.add_argument('identity_number', type=str, help='Student identity number')
 parser.add_argument('email', type=str, help='Student e-mail address')
 
 
@@ -177,50 +155,46 @@ class StudentExistenceTokens(object):
     STUDENT_MISSING = u'student_missing'
 
 
-def get_membership_status(identity_number, email):
+def get_membership_status(email):
     """
-    :type identity_number: String
-    :type email:  String
+    :type email:  str
     :rtype : dict
     """
-    logger.debug('arguments: {}'.format((identity_number, email)))
+    logger.debug('arguments: {}'.format((email)))
 
-    sql_query_result = Studentreg.query.get(identity_number)
+    email = email.strip()
 
-    # Student record exists
+    sql_query_result = Studentreg.query.filter_by(email=email).first()
+
+    # Student record does not exist
     if sql_query_result is None:
         return dict(
             student_existence=StudentExistenceTokens.STUDENT_MISSING,
         )
 
-    if sql_query_result.email.strip() != email.strip():
-        # Student does not belong to the aguda.
-        if sql_query_result.revaha == Revaha.DOES_NOT_BELONG:
-            return dict(
-                student_existence=StudentExistenceTokens.STUDENT_EXISTS,
-                aguda_membership_status=AgudaMembershipTokens.NOT_MEMBER,
-            )
+    # Student does not belong to the agudaorg.
+    if sql_query_result.revaha == Revaha.DOES_NOT_BELONG:
+        return dict(
+            aguda_membership_status=AgudaMembershipTokens.NOT_MEMBER,
+        )
 
-        # Student belongs to aguda
-        if sql_query_result.revaha == Revaha.BELONGS:
-            return dict(
-                student_existence=StudentExistenceTokens.STUDENT_EXISTS,
-                aguda_membership_status=AgudaMembershipTokens.NOT_MEMBER,
+    # Student belongs to agudaorg
+    if sql_query_result.revaha == Revaha.BELONGS:
+        return dict(
+            aguda_membership_status=AgudaMembershipTokens.MEMBER,
             )
 
 
 class MembershipStatus(flask.ext.restful.Resource):
     @requires_auth
     def post(self):
-        identity_number = request.form['identity_number']
         email = request.form['email']
         return get_membership_status(
-            identity_number=identity_number.strip(),
             email=email.strip(),
         )
 
 
-api.add_resource(MembershipStatus, '/v1.0/membership_status/')
+api.add_resource(MembershipStatus, '/beta/membership_status')
 
 ##############
 #### Main ####

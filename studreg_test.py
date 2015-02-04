@@ -1,18 +1,23 @@
 import os
-import studreg
 import unittest
+import config
 import tempfile
+
+def make_request(data):
+    username = 'copy_people'
+    password = config.local_config.api_user['copy_people']
+    return request(
+        'http://127.0.0.1:5002',
+        auth=(username, password),
+        data=data
+    )
 
 class StudregTestCase(unittest.TestCase):
     def setUp(self):
-        self.db_fd, studreg.app.config['DATABASE'] = tempfile.mkstemp()
-        studreg.app.config['TESTING'] = True
-        self.app = studreg.app.test_client()
-        studreg.init_db()
+        self.config = config
 
-    def tearDown(self):
-        os.close(self.db_fd)
-        os.unlink(studreg.app.config['DATABASE'])
+    def test_failing(self):
+        assert False
 
     def login(self, username, password):
         return self.app.post()

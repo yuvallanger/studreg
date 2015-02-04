@@ -3,4 +3,4 @@
 import config
 
 from studreg import app
-app.run(debug=True)
+app.run(debug=False)
