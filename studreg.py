@@ -7,7 +7,6 @@ from builtins import *
 
 from functools import wraps
 
-
 import flask
 import flask.logging
 from flask import Flask, request
@@ -29,10 +28,10 @@ MYSQL_URI = (
     '{username}:{password}@'
     '{host}/{database}'
 ).format(
-    username = local_config.mysql['username'],
-    password = local_config.mysql['password'],
-    host     = local_config.mysql['host'    ],
-    database = local_config.mysql['database'],
+    username=local_config.mysql['username'],
+    password=local_config.mysql['password'],
+    host=local_config.mysql['host'],
+    database=local_config.mysql['database'],
 )
 
 ######################
@@ -75,7 +74,9 @@ def requires_auth(f):
         if not auth or not check_auth(auth.username, auth.password):
             return authenticate()
         return f(*args, **kwargs)
+
     return decorated
+
 
 ################
 #### Models ####
@@ -88,9 +89,11 @@ class Ezor(db.Model):
     ezor = Column(Integer, nullable=False)
     hug = Column(Integer, nullable=False)
 
+
 class Revaha(object):
     DOES_NOT_BELONG = u'0'
     BELONGS = u'1'
+
 
 class Studentreg(db.Model):
     __tablename__ = 'studentreg'
@@ -133,6 +136,7 @@ class User(db.Model):
     is_active = Column(Integer, nullable=False)
     usertype = Column(String(11), nullable=False)
 
+
 ##################
 #### No cache ####
 ##################
@@ -162,13 +166,16 @@ parser = flask.ext.restful.reqparse.RequestParser()
 parser.add_argument('identity_number', type=str, help='Student identity number')
 parser.add_argument('email', type=str, help='Student e-mail address')
 
+
 class AgudaMembershipTokens(object):
     MEMBER = u'member'
-    NOT_MEMBER= u'not_member'
+    NOT_MEMBER = u'not_member'
+
 
 class StudentExistenceTokens(object):
     STUDENT_EXISTS = u'student_exists'
     STUDENT_MISSING = u'student_missing'
+
 
 def get_membership_status(identity_number, email):
     """
@@ -211,6 +218,7 @@ class MembershipStatus(flask.ext.restful.Resource):
             identity_number=identity_number.strip(),
             email=email.strip(),
         )
+
 
 api.add_resource(MembershipStatus, '/v1.0/membership_status/')
 

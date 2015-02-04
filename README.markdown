@@ -1,4 +1,4 @@
 Student Registration
 ====================
 
-Oneliner about the application.
+One-liner about the application.
