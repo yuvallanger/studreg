@@ -4,10 +4,13 @@ import unittest
 import config
 import tempfile
 
-try: import simplejson as json
-except ImportError: import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 import requests
+
 
 def make_post_request(data):
     username = 'copy_people'
@@ -18,6 +21,7 @@ def make_post_request(data):
         data=data,
     )
 
+
 def make_get_request(params):
     username = 'copy_people'
     password = config.local_config.api_user['copy_people']
@@ -26,6 +30,7 @@ def make_get_request(params):
         auth=(username, password),
         params=params,
     )
+
 
 class StudregTestCase(unittest.TestCase):
     def setUp(self):

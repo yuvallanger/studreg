@@ -182,7 +182,7 @@ def get_membership_status(email):
     if sql_query_result.revaha == Revaha.BELONGS:
         return dict(
             aguda_membership_status=AgudaMembershipTokens.MEMBER,
-            )
+        )
 
 
 class MembershipStatus(flask.ext.restful.Resource):
