@@ -9,13 +9,22 @@ except ImportError: import json
 
 import requests
 
-def make_request(data):
+def make_post_request(data):
     username = 'copy_people'
     password = config.local_config.api_user['copy_people']
     return requests.post(
         'https://aguda.org.il/studreg/api/beta/membership_status',
         auth=(username, password),
         data=data,
+    )
+
+def make_get_request(params):
+    username = 'copy_people'
+    password = config.local_config.api_user['copy_people']
+    return requests.get(
+        'https://aguda.org.il/studreg/api/beta/membership_status',
+        auth=(username, password),
+        params=params,
     )
 
 class StudregTestCase(unittest.TestCase):
@@ -29,7 +38,7 @@ class StudregTestCase(unittest.TestCase):
         data = dict(
             email='yuval.langer@gmail.com',
         )
-        r = make_request(data)
+        r = make_post_request(data)
 
         result = json.loads(r.text)
         expected = json.loads('{"student_existence": "student_missing"}')
@@ -43,7 +52,7 @@ class StudregTestCase(unittest.TestCase):
         data = dict(
             email='doron.zaada@mail.huji.ac.il',
         )
-        r = make_request(data)
+        r = make_post_request(data)
 
         result = json.loads(r.text)
         expected = json.loads('{"aguda_membership_status": "member"}')
@@ -53,5 +62,32 @@ class StudregTestCase(unittest.TestCase):
 
         assert result == expected
 
+    def test_get_no_id(self):
+        params = dict(
+            email='yuval.langer@gmail.com',
+        )
+        r = make_get_request(params=params)
+
+        result = json.loads(r.text)
+        expected = json.loads('{"student_existence": "student_missing"}')
+
+        print(result)
+        print(expected)
+
+        assert result == expected
+
+    def test_get_exists_and_agudaorg_member(self):
+        params = dict(
+            email='doron.zaada@mail.huji.ac.il',
+        )
+        r = make_get_request(params=params)
+
+        result = json.loads(r.text)
+        expected = json.loads('{"aguda_membership_status": "member"}')
+
+        print(result)
+        print(expected)
+
+        assert result == expected
 if __name__ == '__main__':
     unittest.main()
