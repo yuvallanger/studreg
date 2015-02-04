@@ -220,6 +220,6 @@ api.add_resource(MembershipStatus, '/v1.0/membership_status/')
 
 if __name__ == '__main__':
     app.run(
-        port=5001,
+        port=local_config.port,
         debug=local_config.debug,
     )
