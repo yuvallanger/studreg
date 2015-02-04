@@ -193,6 +193,13 @@ class MembershipStatus(flask.ext.restful.Resource):
             email=email.strip(),
         )
 
+    def get(self):
+        email = request.args['email']
+
+        return get_membership_status(
+            email=email.strip(),
+        )
+
 
 api.add_resource(MembershipStatus, '/beta/membership_status')
 
