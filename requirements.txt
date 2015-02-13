@@ -12,7 +12,7 @@ itsdangerous==0.24
 Jinja2==2.7.3
 MarkupSafe==0.23
 mccabe==0.3
-pep8==1.5.7
+pep8==1.6.1
 pyflakes==0.8.1
 PyMySQL==0.6.3
 pytz==2014.10
