@@ -1,4 +1,4 @@
 Student Registration
 ====================
 
-One-liner about the application.
+http://aguda.org.il's student registration and management system.
