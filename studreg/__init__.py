@@ -44,4 +44,4 @@ oid = OpenID(app, os.path.join(basedir, 'tmp'))
 manager = Manager(app)
 manager.add_command('db', MigrateCommand)
 
-from app import views, models
+from app import views, models, forms
